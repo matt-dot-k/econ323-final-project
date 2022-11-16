@@ -1,0 +1,5 @@
+# Files to leave untracked
+
+*.R
+*.Rmd
+*.pdf
