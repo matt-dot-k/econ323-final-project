@@ -1,5 +1,7 @@
-# Files to leave untracked
-
+# R related files
 *.R
 *.Rmd
+
+# Miscellaneous files and extensions
 *.pdf
+*.csv
