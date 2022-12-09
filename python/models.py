@@ -1,11 +1,7 @@
-# Import packages and methods
+# Import packages for data handling and plotting
 import pandas as pd
 from pandas import DataFrame as df
 import numpy as np
-import statsmodels as sm
-from glmnet_py import glmnet
-import xgboost as xgb
-
 from plotnine import *
 
 # Import and transform data
@@ -54,6 +50,8 @@ plot_theme = theme(
         size = 0.1, color = "#808080"),
     panel_background = element_rect(
         fill = "#FFFFFF"),
+    panel_border = element_rect(
+        fill = "#000000", size = 1.0),
     plot_background = element_rect(
         fill = "#FFFFFF"),
     legend_title = element_text(
@@ -98,3 +96,32 @@ income_chart = (ggplot(
 
 income_chart.draw()
 
+# Import packages for pre-processing data and model fitting
+from sklearn import model_selection, linear_model
+import statsmodels.api as sm
+from skranger.ensemble import RangerForestRegressor
+
+boston = pd.read_csv("./data/boston.csv")
+
+X = boston.drop('MEDV', axis = 1)
+y = boston['MEDV']
+
+X_train, X_test, y_train, y_test = model_selection.train_test_split(
+    X, y, test_size = 0.25, random_state = 50)
+
+def mean_square_error(obs, pred):
+    """
+    Takes in a vector of observed values and predicted values and
+    returns the MSE for out-of-sample predictions
+    """
+    SE = (obs - pred) ** 2
+    MSE = np.mean(SE)
+    return MSE
+
+# Fit ordinary least squares model 
+OLS_model = sm.OLS(endog = y_train, exog = X_train)
+OLS_fit = OLS_model.fit()
+
+# Fit L1 regularized regression
+lasso_model = linear_model.Lasso(alpha = 1.0, warm_start = True)
+lasso_fit = lasso_model.fit(X = X_train, y = y_train)
