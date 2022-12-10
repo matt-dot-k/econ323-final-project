@@ -2,6 +2,7 @@
 import pandas as pd
 from pandas import DataFrame as df
 import numpy as np
+import matplotlib.pyplot as plt
 from plotnine import *
 
 # Import and transform data
@@ -109,15 +110,6 @@ y = boston['MEDV']
 X_train, X_test, y_train, y_test = model_selection.train_test_split(
     X, y, test_size = 0.25, random_state = 50)
 
-def mean_square_error(obs, pred):
-    """
-    Takes in a vector of observed values and predicted values and
-    returns the MSE for out-of-sample predictions
-    """
-    SE = (obs - pred) ** 2
-    MSE = np.mean(SE)
-    return MSE
-
 # Fit ordinary least squares model 
 OLS_model = sm.OLS(endog = y_train, exog = X_train)
 OLS_fit = OLS_model.fit()
@@ -125,3 +117,62 @@ OLS_fit = OLS_model.fit()
 # Fit L1 regularized regression
 lasso_model = linear_model.Lasso(alpha = 1.0, warm_start = True)
 lasso_fit = lasso_model.fit(X = X_train, y = y_train)
+
+a = np.exp(np.linspace(10, -2, 50))
+alphas, coefs_lasso, _ = linear_model.lasso_path(
+    X_train, y_train, alphas = a, max_iter = 10000)
+
+def lasso_path(X, y, alpha):
+    """
+    Takes in a matrix of regressors (X), a vector of response 
+    values (y), and a vector of regularization coefficients (alphas)
+
+    Obtains lasso coefficients for each iteration over alphas and
+    plots the resulting coefficient trace in ggplot style
+    """
+
+    # Obtain coefficients across the whole lasso path
+    coefs = []
+    for a in alpha:
+        lasso = linear_model.Lasso(alpha = a, fit_intercept = False)
+        lasso.fit(X, y)
+        coefs.append(lasso.coef_)
+    
+    # Create dataframe for plotting the coefficient path
+    alpha_coefs = pd.DataFrame(coefs)
+    alpha_coefs['alpha'] = alphas
+    colors = [
+        '#FF8833', '#00A0DD', '#593380', '#0F5499', '#00994D', '#CC1451', 
+        '#CCE6FF', '#990F3D', '#0D7680', '#0F5499', '#593380', '#FF7FAA', "#0D7680"]
+
+    # Plot the coefficient path 
+    coef_plot = ggplot()
+    for i in (range(len(list(alpha_coefs.columns)) - 1)):
+        coef_plot = (
+            coef_plot + 
+            geom_line(
+                data = alpha_coefs,
+                mapping = aes(x = 'alpha', y = alpha_coefs[i]),
+                size = 1.2,
+                color = colors[i]) +
+            scale_x_log10() +
+            plot_theme)
+    
+    coef_plot = (
+        coef_plot +
+        labs(
+            x = "Alpha",
+            y = "Coefficients",
+            title = "Path of Lasso Coefficients with Varying Alpha")) 
+    
+    return coef_plot
+
+lasso_path(X = X_train, y = y_train, alpha = alphas)
+
+# Comparing the coefficient estimates of OLS and lasso
+OLS_coefs = OLS_fit.params
+lasso_coefs = lasso_fit.coef_
+
+coef_table = pd.DataFrame()
+coef_table['OLS'] = OLS_coefs
+coef_table['lasso'] = lasso_coefs
