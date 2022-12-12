@@ -176,3 +176,32 @@ lasso_coefs = lasso_fit.coef_
 coef_table = pd.DataFrame()
 coef_table['OLS'] = OLS_coefs
 coef_table['lasso'] = lasso_coefs
+
+# Fitting the random forest model
+rf_mod = RangerForestRegressor(
+    n_estimators = 400, mtry = len(boston.columns) - 1, oob_error = True)
+
+rf_fit = rf_mod.fit(X_train, y_train)
+
+# Evaluating prediction risk across the three models
+
+def mean_square_error(obs, pred):
+    diff_sq = (obs - pred) ** 2
+    mse = np.mean(diff_sq)
+    return mse
+
+OLS_preds = OLS_fit.predict(exog = X_test)
+lasso_preds = lasso_model.predict(X_test)
+rf_preds = rf_mod.predict(X = X_test)
+
+model_errors = {
+    'Method' : ['OLS', 'Lasso', 'RF'],
+    'MSE' : [
+        round(mean_square_error(obs = y_test, pred = OLS_preds), 2),
+        round(mean_square_error(obs = y_test, pred = lasso_preds), 2),
+        round(mean_square_error(obs = y_test, pred = rf_preds), 2)
+    ]
+}
+
+MSE = pd.DataFrame.from_dict(model_errors)
+print(MSE)
